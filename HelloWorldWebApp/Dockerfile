@@ -1,21 +1,19 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-# https://hub.docker.com/_/microsoft-dotnet
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
-WORKDIR /source
+# syntax=docker/dockerfile:1
+FROM mcr.microsoft.com/dotnet/core/sdk:5.0 AS build-env
+WORKDIR /app
 
-# copy csproj and restore as distinct layers
-COPY *.sln .
-COPY HelloWorldWebApp/*.csproj ./HelloWorldWebApp/
+# Copy csproj and restore as distinct layers
+COPY *.csproj ./
 RUN dotnet restore
 
-# copy everything else and build app
-COPY HelloWorldWebApp/. ./HelloWorldWebApp/
-WORKDIR /source/HelloWorldWebApp
-RUN dotnet publish -c release -o /app --no-restore
+# Copy everything else and build
+COPY . ./
+RUN dotnet publish -c Release -o out
 
-# final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:5.0
+# Build runtime image
+FROM mcr.microsoft.com/dotnet/core/aspnet:5.0
 WORKDIR /app
-COPY --from=build /app ./
+COPY --from=build-env /app/out .
 ENTRYPOINT ["dotnet", "HelloWorldWebApp.dll"]
